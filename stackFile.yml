@@ -1,0 +1,51 @@
+version: '1.0'
+services:
+  - name: db
+    type: postgres
+    version: 10.5
+    configuration: StandAlone
+    ports:
+      - 5432
+    username: alfioalfio
+    database: alfio
+    userPassword: null
+    remoteAccess: false
+    deployTo:
+      - alfio
+
+  - name: alfio
+    type: docker
+    image: alfio/alf.io
+    version: latest
+    ports:
+      - 8080
+    remoteAccess: false
+    env:
+      DB_TYPE: postgres
+      POSTGRES_PORT_5432_TCP_ADDR: "{{=service('db').getMasterAlias()}}"
+      POSTGRES_ENV_POSTGRES_DB: "{{=service('db').get('database')}}"
+      POSTGRES_ENV_POSTGRES_USERNAME: "{{=service('db').get('username')}}"
+      POSTGRES_ENV_POSTGRES_PASSWORD: "{{=service('db').get('userPassword')}}"
+      DB_ROOT_PASSWORD: "{{=service('db').get('userPassword')}}"
+      POSTGRES_PORT_5432_TCP_PORT: 5432
+      SPRING_PROFILES_ACTIVE: dev,jdbc-session
+    deployTo:
+      - alfio
+
+  - name: web
+    type: nginx
+    version: 1.17
+    ports:
+      - 80
+      - 443
+    remoteAccess: true
+    serviceFiles:
+      - name: alfio
+    deployTo:
+      - alfio
+
+hosts:
+  - name: alfio
+    requirements:
+      cores: 1
+      memory: 2
